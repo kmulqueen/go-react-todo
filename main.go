@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -19,8 +20,9 @@ func main() {
 
 	todos := []Todo{}
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Status(http.StatusOK).JSON(fiber.Map{"msg": "Hello world"})
+	// List all Todos
+	app.Get("/api/todos", func(c *fiber.Ctx) error {
+		return c.Status(http.StatusOK).JSON(todos)
 	})
 
 	// Create new Todo
@@ -41,15 +43,41 @@ func main() {
 		return c.Status(http.StatusCreated).JSON(todo)
 	})
 
+	// Get Todo by ID
+	app.Get("/api/todos/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+
+		for _, todo := range todos {
+			if strconv.Itoa(todo.ID) == id {
+				return c.Status(http.StatusOK).JSON(todo)
+			}
+		}
+
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Todo not found"})
+	})
+
 	// Update a Todo
 	app.Patch("/api/todos/:id", func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
 		for i, todo := range todos {
-			todoID := strconv.Itoa(todo.ID)
-			if todoID == id {
+			if strconv.Itoa(todo.ID) == id {
 				todos[i].Completed = !todos[i].Completed
 				return c.Status(http.StatusOK).JSON(todos[i])
+			}
+		}
+
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Todo not found"})
+	})
+
+	// Delete a Todo
+	app.Delete("/api/todos/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+
+		for i, todo := range todos {
+			if strconv.Itoa(todo.ID) == id {
+				todos = append(todos[:i], todos[i+1:]...)
+				return c.Status(http.StatusOK).JSON(fiber.Map{"msg": fmt.Sprint(todo.Body) + " was deleted"})
 			}
 		}
 
